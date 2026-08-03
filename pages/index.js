@@ -3,32 +3,35 @@ import Head from 'next/head';
 
 export default function Home() {
   const [tasks, setTasks] = useState([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [form, setForm] = useState({
     title: '',
     description: '',
     due_date: '',
     topic: '',
-    status: 'Todo'   // <-- Corrected
+    status: 'Todo'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
     title: '',
     description: '',
     due_date: '',
     topic: '',
-    status: 'Todo'   // <-- Corrected
+    status: 'Todo'
   });
 
+  // Load tasks whenever showArchived toggles
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [showArchived]);
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch('/api/tasks');
+      const url = showArchived ? '/api/tasks?includeArchived=true' : '/api/tasks';
+      const res = await fetch(url);
       const data = await res.json();
       setTasks(data);
     } catch (error) {
@@ -36,6 +39,7 @@ export default function Home() {
     }
   };
 
+  // ---- Create task ----
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -60,7 +64,7 @@ export default function Home() {
         topic: '',
         status: 'Todo'
       });
-      
+
       await fetchTasks();
     } catch (error) {
       setError(error.message);
@@ -73,6 +77,7 @@ export default function Home() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // ---- Edit handlers ----
   const startEdit = (task) => {
     setEditingId(task.id);
     setEditForm({
@@ -118,6 +123,24 @@ export default function Home() {
     }
   };
 
+  // ---- Archive handler ----
+  const handleArchive = async (id) => {
+    if (!confirm('Archive this task? It will be hidden from the active list.')) return;
+    try {
+      const res = await fetch(`/api/tasks?id=${id}&action=archive`, {
+        method: 'PATCH'
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to archive task');
+      }
+      // Refresh the list – if showing archived, it will remain; if not, it will disappear.
+      await fetchTasks();
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
   return (
     <>
       <Head>
@@ -128,23 +151,23 @@ export default function Home() {
 
       <main style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
         <h1>Todo App</h1>
-        
+
         {error && (
           <div style={{ color: 'red', marginBottom: '10px', padding: '10px', border: '1px solid red', borderRadius: '4px' }}>
             {error}
           </div>
         )}
-        
+
         {/* Create Task Form */}
-        <form onSubmit={handleSubmit} style={{ 
-          marginBottom: '30px', 
-          padding: '20px', 
-          border: '1px solid #ccc', 
+        <form onSubmit={handleSubmit} style={{
+          marginBottom: '30px',
+          padding: '20px',
+          border: '1px solid #ccc',
           borderRadius: '8px',
           backgroundColor: '#f9f9f9'
         }}>
           <h2>Create New Task</h2>
-          
+
           <div style={{ marginBottom: '10px' }}>
             <label>
               Title: *
@@ -158,7 +181,7 @@ export default function Home() {
               />
             </label>
           </div>
-          
+
           <div style={{ marginBottom: '10px' }}>
             <label>
               Description:
@@ -170,7 +193,7 @@ export default function Home() {
               />
             </label>
           </div>
-          
+
           <div style={{ marginBottom: '10px' }}>
             <label>
               Due Date: *
@@ -184,7 +207,7 @@ export default function Home() {
               />
             </label>
           </div>
-          
+
           <div style={{ marginBottom: '10px' }}>
             <label>
               Topic: *
@@ -198,7 +221,7 @@ export default function Home() {
               />
             </label>
           </div>
-          
+
           <div style={{ marginBottom: '10px' }}>
             <label>
               Status:
@@ -214,16 +237,16 @@ export default function Home() {
               </select>
             </label>
           </div>
-          
-          <button 
-            type="submit" 
+
+          <button
+            type="submit"
             disabled={loading}
-            style={{ 
-              padding: '10px 20px', 
-              backgroundColor: '#0070f3', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '4px', 
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#0070f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
               cursor: 'pointer',
               opacity: loading ? 0.7 : 1
             }}
@@ -231,6 +254,18 @@ export default function Home() {
             {loading ? 'Creating...' : 'Create Task'}
           </button>
         </form>
+
+        {/* Toggle Archived */}
+        <div style={{ marginBottom: '20px' }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+            />
+            Show archived tasks
+          </label>
+        </div>
 
         {/* Task List */}
         <div>
@@ -240,15 +275,16 @@ export default function Home() {
           ) : (
             <ul style={{ listStyle: 'none', padding: 0 }}>
               {tasks.map(task => (
-                <li key={task.id} style={{ 
-                  padding: '15px', 
-                  marginBottom: '10px', 
-                  border: '1px solid #ddd', 
+                <li key={task.id} style={{
+                  padding: '15px',
+                  marginBottom: '10px',
+                  border: '1px solid #ddd',
                   borderRadius: '4px',
-                  backgroundColor: '#f9f9f9'
+                  backgroundColor: task.archived ? '#f0f0f0' : '#f9f9f9',
+                  opacity: task.archived ? 0.7 : 1
                 }}>
                   {editingId === task.id ? (
-                    // Edit form
+                    // Edit form (same as before)
                     <form onSubmit={handleEditSubmit}>
                       <h3>Edit Task</h3>
                       <div style={{ marginBottom: '10px' }}>
@@ -317,30 +353,30 @@ export default function Home() {
                         </label>
                       </div>
                       <div style={{ display: 'flex', gap: '10px' }}>
-                        <button 
-                          type="submit" 
+                        <button
+                          type="submit"
                           disabled={loading}
-                          style={{ 
-                            padding: '8px 16px', 
-                            backgroundColor: '#28a745', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '4px', 
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#28a745',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
                             cursor: 'pointer',
                             opacity: loading ? 0.7 : 1
                           }}
                         >
                           {loading ? 'Saving...' : 'Save'}
                         </button>
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={cancelEdit}
-                          style={{ 
-                            padding: '8px 16px', 
-                            backgroundColor: '#dc3545', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '4px', 
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
                             cursor: 'pointer'
                           }}
                         >
@@ -350,32 +386,57 @@ export default function Home() {
                     </form>
                   ) : (
                     // View mode
-                    <>
+                    <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                          <h3 style={{ margin: '0 0 5px 0' }}>{task.title}</h3>
+                          <h3 style={{ margin: '0 0 5px 0' }}>
+                            {task.title}
+                            {task.archived && <span style={{ marginLeft: '10px', fontSize: '14px', color: '#999' }}>(Archived)</span>}
+                          </h3>
                           {task.description && <p style={{ margin: '5px 0' }}>{task.description}</p>}
                           <div style={{ fontSize: '14px', color: '#666' }}>
-                            <span>Due: {task.due_date}</span> | 
-                            <span> Topic: {task.topic}</span> | 
+                            <span>Due: {task.due_date}</span> |
+                            <span> Topic: {task.topic}</span> |
                             <span> Status: {task.status}</span>
+                            {task.archived_at && <span> | Archived: {new Date(task.archived_at).toLocaleDateString()}</span>}
                           </div>
                         </div>
-                        <button 
-                          onClick={() => startEdit(task)}
-                          style={{ 
-                            padding: '6px 12px', 
-                            backgroundColor: '#ffc107', 
-                            color: '#000', 
-                            border: 'none', 
-                            borderRadius: '4px', 
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Edit
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {/* Edit button (only if not archived) */}
+                          {!task.archived && (
+                            <button
+                              onClick={() => startEdit(task)}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#ffc107',
+                                color: '#000',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Edit
+                            </button>
+                          )}
+                          {/* Archive button (only if not archived) */}
+                          {!task.archived && (
+                            <button
+                              onClick={() => handleArchive(task.id)}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Archive
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </>
+                    </div>
                   )}
                 </li>
               ))}
