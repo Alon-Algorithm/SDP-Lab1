@@ -38,3 +38,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+
+
+## Running Tests
+
+The application includes automated tests that exercise real behavior. To run them:
+
+1. Ensure Node.js v22.19.0 is installed.
+2. Install dependencies: 
+npm install
+3. Run the tests:
+npm test
+
+
+All tests run against a throwaway SQLite database (`data/test.db`) and are deterministic.

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
+import { isTaskOverdue } from '../lib/overdue.js';
 
 // Helper: order of statuses for sorting
 const STATUS_ORDER = { 'Todo': 0, 'In-Progress': 1, 'Complete': 2 };
