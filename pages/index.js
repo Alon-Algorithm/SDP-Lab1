@@ -8,12 +8,20 @@ export default function Home() {
     description: '',
     due_date: '',
     topic: '',
-    status: 'todo'
+    status: 'Todo'   // <-- Corrected
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    due_date: '',
+    topic: '',
+    status: 'Todo'   // <-- Corrected
+  });
 
-  // Load tasks on page load
   useEffect(() => {
     fetchTasks();
   }, []);
@@ -45,16 +53,14 @@ export default function Home() {
         throw new Error(error.error || 'Failed to create task');
       }
 
-      // Reset form
       setForm({
         title: '',
         description: '',
         due_date: '',
         topic: '',
-        status: 'todo'
+        status: 'Todo'
       });
       
-      // Refresh task list
       await fetchTasks();
     } catch (error) {
       setError(error.message);
@@ -65,6 +71,51 @@ export default function Home() {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const startEdit = (task) => {
+    setEditingId(task.id);
+    setEditForm({
+      title: task.title,
+      description: task.description || '',
+      due_date: task.due_date,
+      topic: task.topic,
+      status: task.status
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const handleEditChange = (e) => {
+    setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`/api/tasks?id=${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update task');
+      }
+
+      setEditingId(null);
+      await fetchTasks();
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -78,7 +129,6 @@ export default function Home() {
       <main style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
         <h1>Todo App</h1>
         
-        {/* Error message */}
         {error && (
           <div style={{ color: 'red', marginBottom: '10px', padding: '10px', border: '1px solid red', borderRadius: '4px' }}>
             {error}
@@ -158,9 +208,9 @@ export default function Home() {
                 onChange={handleChange}
                 style={{ width: '100%', padding: '8px', marginTop: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
               >
-                <option value="todo">Todo</option>
-                <option value="in-progress">In Progress</option>
-                <option value="complete">Complete</option>
+                <option value="Todo">Todo</option>
+                <option value="In-Progress">In-Progress</option>
+                <option value="Complete">Complete</option>
               </select>
             </label>
           </div>
@@ -197,13 +247,136 @@ export default function Home() {
                   borderRadius: '4px',
                   backgroundColor: '#f9f9f9'
                 }}>
-                  <h3 style={{ margin: '0 0 5px 0' }}>{task.title}</h3>
-                  {task.description && <p style={{ margin: '5px 0' }}>{task.description}</p>}
-                  <div style={{ fontSize: '14px', color: '#666' }}>
-                    <span>Due: {task.due_date}</span> | 
-                    <span> Topic: {task.topic}</span> | 
-                    <span> Status: {task.status}</span>
-                  </div>
+                  {editingId === task.id ? (
+                    // Edit form
+                    <form onSubmit={handleEditSubmit}>
+                      <h3>Edit Task</h3>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label>
+                          Title: *
+                          <input
+                            type="text"
+                            name="title"
+                            value={editForm.title}
+                            onChange={handleEditChange}
+                            required
+                            style={{ width: '100%', padding: '8px', marginTop: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                          />
+                        </label>
+                      </div>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label>
+                          Description:
+                          <textarea
+                            name="description"
+                            value={editForm.description}
+                            onChange={handleEditChange}
+                            style={{ width: '100%', padding: '8px', marginTop: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                          />
+                        </label>
+                      </div>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label>
+                          Due Date: *
+                          <input
+                            type="date"
+                            name="due_date"
+                            value={editForm.due_date}
+                            onChange={handleEditChange}
+                            required
+                            style={{ width: '100%', padding: '8px', marginTop: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                          />
+                        </label>
+                      </div>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label>
+                          Topic: *
+                          <input
+                            type="text"
+                            name="topic"
+                            value={editForm.topic}
+                            onChange={handleEditChange}
+                            required
+                            style={{ width: '100%', padding: '8px', marginTop: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                          />
+                        </label>
+                      </div>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label>
+                          Status:
+                          <select
+                            name="status"
+                            value={editForm.status}
+                            onChange={handleEditChange}
+                            style={{ width: '100%', padding: '8px', marginTop: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                          >
+                            <option value="Todo">Todo</option>
+                            <option value="In-Progress">In-Progress</option>
+                            <option value="Complete">Complete</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                          type="submit" 
+                          disabled={loading}
+                          style={{ 
+                            padding: '8px 16px', 
+                            backgroundColor: '#28a745', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '4px', 
+                            cursor: 'pointer',
+                            opacity: loading ? 0.7 : 1
+                          }}
+                        >
+                          {loading ? 'Saving...' : 'Save'}
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={cancelEdit}
+                          style={{ 
+                            padding: '8px 16px', 
+                            backgroundColor: '#dc3545', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '4px', 
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    // View mode
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <h3 style={{ margin: '0 0 5px 0' }}>{task.title}</h3>
+                          {task.description && <p style={{ margin: '5px 0' }}>{task.description}</p>}
+                          <div style={{ fontSize: '14px', color: '#666' }}>
+                            <span>Due: {task.due_date}</span> | 
+                            <span> Topic: {task.topic}</span> | 
+                            <span> Status: {task.status}</span>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => startEdit(task)}
+                          style={{ 
+                            padding: '6px 12px', 
+                            backgroundColor: '#ffc107', 
+                            color: '#000', 
+                            border: 'none', 
+                            borderRadius: '4px', 
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
