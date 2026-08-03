@@ -1,9 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
+
+// Helper: order of statuses for sorting
+const STATUS_ORDER = { 'Todo': 0, 'In-Progress': 1, 'Complete': 2 };
 
 export default function Home() {
   const [tasks, setTasks] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
+  const [sortBy, setSortBy] = useState('due_date'); // 'topic' | 'status' | 'due_date'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' | 'desc'
+
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -23,7 +29,7 @@ export default function Home() {
     status: 'Todo'
   });
 
-  // Load tasks whenever showArchived toggles
+  // Fetch tasks when showArchived changes
   useEffect(() => {
     fetchTasks();
   }, [showArchived]);
@@ -38,6 +44,31 @@ export default function Home() {
       console.error('Error fetching tasks:', error);
     }
   };
+
+  // ---- Sorting logic (derived) ----
+  const sortedTasks = useMemo(() => {
+    const tasksCopy = [...tasks];
+    const compare = (a, b) => {
+      let valA, valB;
+      if (sortBy === 'topic') {
+        valA = (a.topic || '').toLowerCase();
+        valB = (b.topic || '').toLowerCase();
+      } else if (sortBy === 'status') {
+        valA = STATUS_ORDER[a.status] ?? 0;
+        valB = STATUS_ORDER[b.status] ?? 0;
+      } else if (sortBy === 'due_date') {
+        // Treat missing due_date as 'far future' for ascending, 'far past' for descending
+        const timeA = a.due_date ? new Date(a.due_date).getTime() : (sortOrder === 'asc' ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER);
+        const timeB = b.due_date ? new Date(b.due_date).getTime() : (sortOrder === 'asc' ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER);
+        valA = timeA;
+        valB = timeB;
+      }
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    };
+    return tasksCopy.sort(compare);
+  }, [tasks, sortBy, sortOrder]);
 
   // ---- Create task ----
   const handleSubmit = async (e) => {
@@ -134,11 +165,15 @@ export default function Home() {
         const error = await res.json();
         throw new Error(error.error || 'Failed to archive task');
       }
-      // Refresh the list – if showing archived, it will remain; if not, it will disappear.
       await fetchTasks();
     } catch (error) {
       setError(error.message);
     }
+  };
+
+  // ---- Toggle sort order ----
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
   return (
@@ -158,7 +193,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Create Task Form */}
+        {/* Create Task Form – unchanged */}
         <form onSubmit={handleSubmit} style={{
           marginBottom: '30px',
           padding: '20px',
@@ -255,8 +290,8 @@ export default function Home() {
           </button>
         </form>
 
-        {/* Toggle Archived */}
-        <div style={{ marginBottom: '20px' }}>
+        {/* Controls: Toggle archived + Sort */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '20px', alignItems: 'center' }}>
           <label>
             <input
               type="checkbox"
@@ -265,16 +300,44 @@ export default function Home() {
             />
             Show archived tasks
           </label>
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <label>
+              Sort by:
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{ marginLeft: '4px', padding: '4px' }}
+              >
+                <option value="topic">Topic</option>
+                <option value="status">Status</option>
+                <option value="due_date">Due Date</option>
+              </select>
+            </label>
+            <button
+              onClick={toggleSortOrder}
+              style={{
+                padding: '4px 10px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                background: '#f0f0f0'
+              }}
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
         </div>
 
         {/* Task List */}
         <div>
-          <h2>Tasks ({tasks.length})</h2>
-          {tasks.length === 0 ? (
+          <h2>Tasks ({sortedTasks.length})</h2>
+          {sortedTasks.length === 0 ? (
             <p>No tasks yet. Create one above!</p>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0 }}>
-              {tasks.map(task => (
+              {sortedTasks.map(task => (
                 <li key={task.id} style={{
                   padding: '15px',
                   marginBottom: '10px',
@@ -284,7 +347,7 @@ export default function Home() {
                   opacity: task.archived ? 0.7 : 1
                 }}>
                   {editingId === task.id ? (
-                    // Edit form (same as before)
+                    // Edit form – unchanged
                     <form onSubmit={handleEditSubmit}>
                       <h3>Edit Task</h3>
                       <div style={{ marginBottom: '10px' }}>
@@ -402,7 +465,6 @@ export default function Home() {
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          {/* Edit button (only if not archived) */}
                           {!task.archived && (
                             <button
                               onClick={() => startEdit(task)}
@@ -418,7 +480,6 @@ export default function Home() {
                               Edit
                             </button>
                           )}
-                          {/* Archive button (only if not archived) */}
                           {!task.archived && (
                             <button
                               onClick={() => handleArchive(task.id)}
