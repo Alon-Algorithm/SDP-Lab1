@@ -5,17 +5,6 @@ import { isTaskOverdue } from '../lib/overdue.js';
 // Helper: order of statuses for sorting
 const STATUS_ORDER = { 'Todo': 0, 'In-Progress': 1, 'Complete': 2 };
 
-// Helper: check if a task is overdue
-const isTaskOverdue = (task) => {
-  if (!task.due_date) return false;
-  if (task.status === 'Complete') return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dueDate = new Date(task.due_date);
-  dueDate.setHours(0, 0, 0, 0);
-  return dueDate < today;
-};
-
 export default function Home() {
   const [tasks, setTasks] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
