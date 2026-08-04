@@ -17,38 +17,51 @@ cd todo-app
 
 # Install dependencies
 npm install
-This will install all production and development dependencies listed in package.json.
+```
 
-Running the Application
+This will install all production and development dependencies listed in `package.json`.
+
+## Running the Application
+
 To start the development server:
 
-bash
+```bash
 npm run dev
-The application will be available at http://localhost:3000.
+```
 
-Development Notes
-The SQLite database file is created automatically at data/todo.db on first run.
+The application will be available at [http://localhost:3000](http://localhost:3000).
 
-The schema is initialized automatically on the first API call.
+### Development Notes
 
-The server uses Next.js's development mode with hot reloading.
+- The SQLite database file is created automatically at `data/todo.db` on first run.
+- The schema is initialized automatically on the first API call.
+- The server uses Next.js's development mode with hot reloading.
 
-Running Tests
+---
+
+## Running Tests
+
 The application includes automated tests covering creation, editing, archiving, and overdue derivation.
 
-Prerequisites for Testing
-All test dependencies are included in the devDependencies of package.json and installed with npm install.
+### Prerequisites for Testing
 
-Test Command
-bash
+All test dependencies are included in the `devDependencies` of `package.json` and installed with `npm install`.
+
+### Test Command
+
+```bash
 npm test
-What the Tests Cover
-Test FileCoverage
-tests/api.tasks.test.jsAPI endpoints: create, edit, archive, list (including archived)
-tests/overdue.test.jsOverdue helper: date comparisons, completed tasks, missing dates
-Test Environment
-All tests run against a throwaway SQLite database (data/test.db).
+```
 
-The test database is automatically created and cleaned between test files.
+### What the Tests Cover
 
-Tests are deterministic and do not interfere with development data.
+| Test File | Coverage |
+|-----------|----------|
+| `tests/api.tasks.test.js` | API endpoints: create, edit, archive, list (including archived) |
+| `tests/overdue.test.js` | Overdue helper: date comparisons, completed tasks, missing dates |
+
+### Test Environment
+
+- All tests run against a throwaway SQLite database (`data/test.db`).
+- The test database is automatically created and cleaned between test files.
+- Tests are deterministic and do not interfere with development data.
