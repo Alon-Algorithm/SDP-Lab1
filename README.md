@@ -11,7 +11,7 @@ Runs locally on Node.js – no user accounts, no deployment.
 
 ```bash
 git clone https://github.com/Alon-Algorithm/SDP-Lab1.git
-cd SDP-Lab1/todo-app
+cd SDP-Lab1
 ```
 
 ### 2. Install Dependencies
@@ -68,7 +68,7 @@ Full transcripts of AI interactions are available in the `ai/` folder. These dem
 ## Project Structure
 
 ```text
-todo-app/
+SDP-Lab1/
 ├── pages/
 │   ├── api/
 │   │   └── tasks/
